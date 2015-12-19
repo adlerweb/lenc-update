@@ -44,7 +44,7 @@ The script should implement the following features:
  1. To do so you might want to create a softlink:  `cd /etc/cron.daily/; ln -s /usr/local/sbin/lenc-update` 
 
  
-## Workflow of the scipt
+## Work flow of the script
 
 * On every run the script enumerates the configuration directory for files with the given suffix and processes each of them:
  * it extracts the domain name;
@@ -53,3 +53,37 @@ The script should implement the following features:
  * if the date is coming closer than the given amount of days, we fire up letsencrypt-auto with the ini file;
 * If any certificate has been updated successfully, we do restart nginx at the end of the script. 
 
+
+## Sample ini file for letsencrypt
+
+This is my sample letsencrypt ini file for unattended certificate retrieval and renewal:
+
+```
+# This is an example of the kind of things you can do in a configuration file.
+# All flags used by the client can be configured here. Run Let's Encrypt with
+# "--help" to learn more about the available options.
+
+# Use a 4096 bit RSA key instead of 2048
+rsa-key-size = 4096
+
+# Always use the staging/testing server
+#server = https://acme-staging.api.letsencrypt.org/directory
+
+# Uncomment and update to register with the specified e-mail address
+email PQGHCTMLCBHY@spammotel.com
+
+# Uncomment to use a text interface instead of ncurses
+text = True
+
+
+# Uncomment to use the webroot authenticator. Replace webroot-path with the
+# path to the public_html / webroot folder being served by your web server.
+authenticator = webroot
+webroot-path = /var/www/namedinstance/webroot/
+
+domain example.personalrocketscience.de
+
+# make renewal noninteractive
+renew-by-default
+
+```
