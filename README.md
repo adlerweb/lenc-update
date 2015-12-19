@@ -81,7 +81,7 @@ text = True
 authenticator = webroot
 webroot-path = /var/www/namedinstance/webroot/
 
-domain example.personalrocketscience.de
+domain example.mypersonalrocketscience.de
 
 # make renewal noninteractive
 renew-by-default
