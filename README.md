@@ -31,7 +31,7 @@ The script should implement the following features:
 
 
 
-## Quick start
+## Quick Start
 
 1. Make sure the prerequisites above are met or be prepared to change the defaults more aggressively.
 1. Put the file `lenc-update` in your `/usr/local/sbin` directory and make it executable for user root.
@@ -44,7 +44,7 @@ The script should implement the following features:
  1. To do so you might want to create a softlink:  `cd /etc/cron.daily/; ln -s /usr/local/sbin/lenc-update` 
 
  
-## Work flow of the script
+## Work Flow of the Script
 
 * On every run the script enumerates the configuration directory for files with the given suffix and processes each of them:
  * it extracts the domain name;
@@ -54,7 +54,7 @@ The script should implement the following features:
 * If any certificate has been updated successfully, we do restart nginx at the end of the script. 
 
 
-## Sample ini file for letsencrypt
+## Sample Ini File for Letsencrypt
 
 This is my sample letsencrypt ini file for unattended certificate retrieval and renewal:
 
