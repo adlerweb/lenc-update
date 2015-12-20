@@ -26,8 +26,11 @@ The script should implement the following features:
  * and [documentation](https://community.letsencrypt.org/c/docs/) for more info about usage of letsencrypt, or
  * you might be interested in reading my [hands on review on letsencrypt](http://www.mypersonalrocketscience.de/letsencrypt,/nginx,/primer/2015/12/05/my-first-review-on-letsencrypt.html).
 
-1. Have a directory `/etc/letsencrypt` and [create your ".ini" files](http://letsencrypt.readthedocs.org/en/latest/using.html#configuration-file) with all necessary settings to have your certificates processes in a unattended fashion, not requiring any manual intervention.
-1. Make sure the ini-files do have a suffix of `.ini` or change the script configuration later on.
+1. Have a directory `/etc/letsencrypt` and [create your ".ini" files](http://letsencrypt.readthedocs.org/en/latest/using.html#configuration-file) with all necessary settings to have your certificates processes in a unattended fashion (see below for a sample), not requiring any manual intervention.
+1. Make sure your ini files do meet the following requirements:
+ 1. Your ini-files must be named exactly as the domain name requested in the ini file before the suffix.  
+ 1. Make sure the ini-files do have a suffix of `.ini` (or you have to change the script configuration later on).
+ 1. SAN certificates are not supported presently by lenc-updater.
 
 
 
@@ -35,11 +38,13 @@ The script should implement the following features:
 
 1. Make sure the prerequisites above are met or be prepared to change the defaults more aggressively.
 1. Put the file `lenc-update` in your `/usr/local/sbin` directory and make it executable for user root.
-1. If you want to change the defaults in the script and want to keep your setting separate (e.g. to not overwriting the settings when updating the script)  create a file `/etc/default/lenc-update` . All global variables can be overridden here. The most interesting ones are:
- 1. `DEBUG`: Numeric value to increase verbosity, 0=suitable for unattended execution, 1= some more information but still OK for cron execution, prepare for receiving daily mailing from cron.
+1. If you want to change the defaults in the script and want to keep your setting separate (e.g. to not overwriting the settings when updating the script)  create a file `/etc/default/lenc-update`, preferably copied from the supplied ```lenc-update.conf````file . All global variables can be overridden here. You might also us the alternate location in ```/etc/letsencrypt/```. The most interesting variales are:
+ 1. `LENC_AUTOBINARY`: Path and name of the ```letsencrypt-auto``` binary. 
+ 1. `MIN_VALDAYS`: Minimum number of days a certificate is valid until we start trying to renew the signature. Defaults to 14 days.
  1. `LENC_CONFDIR`: Basedir where the letsencrypt configuration lives. Default is "/etc/letsencrypt"
  1. `LENC_CONFFILE_SFX`: file suffix, indicating that this is a letsencrypt certificate definition. Defaults to ".ini"
- 1. `MIN_VALDAYS`: Minimum number of days a certificate is valid until we start trying to renew the signature. Defaults to 14 days.
+ 1. `DEBUG`: Numeric value to increase verbosity, 0=suitable for unattended execution, 1= some more information but still OK for cron execution, prepare for receiving daily mailing from cron.
+ 1. If you're not using nginx or are not happy with the default action "reload" you might review the ```WEBSRV_*``` variables.
 1. Make sure you do run the script on a regular basis, e.g. once a day from cron.
  1. To do so you might want to create a softlink:  `cd /etc/cron.daily/; ln -s /usr/local/sbin/lenc-update` 
 
