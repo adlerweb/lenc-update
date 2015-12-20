@@ -30,7 +30,7 @@ The script should implement the following features:
 1. Make sure your ini files do meet the following requirements:
  1. Your ini-files must be named exactly as the domain name requested in the ini file before the suffix.  
  1. Make sure the ini-files do have a suffix of `.ini` (or you have to change the script configuration later on).
- 1. SAN certificates are not supported presently by lenc-updater.
+ 1. [SAN certificates](https://en.wikipedia.org/wiki/SubjectAltName) are not supported presently by lenc-updater (even if supported by letsencrypt some day in the future).
 
 
 
@@ -44,7 +44,7 @@ The script should implement the following features:
  1. `LENC_CONFDIR`: Basedir where the letsencrypt configuration lives. Default is "/etc/letsencrypt"
  1. `LENC_CONFFILE_SFX`: file suffix, indicating that this is a letsencrypt certificate definition. Defaults to ".ini"
  1. `DEBUG`: Numeric value to increase verbosity, 0=suitable for unattended execution, 1= some more information but still OK for cron execution, prepare for receiving daily mailing from cron.
- 1. If you're not using nginx or are not happy with the default action "reload" you might review the ```WEBSRV_*``` variables.
+ 1. If you're not using nginx or are not happy with the default action "reload" you might want to review the ```WEBSRV_*``` variables.
 1. Make sure you do run the script on a regular basis, e.g. once a day from cron.
  1. To do so you might want to create a softlink:  `cd /etc/cron.daily/; ln -s /usr/local/sbin/lenc-update` 
 
