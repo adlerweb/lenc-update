@@ -1,4 +1,21 @@
 #!/bin/bash 
+#
+# Certificate Update script for letsencrypt 
+#   by (c) Stefan Beckers 2015
+#
+# 		Released under 
+# GNU GNU GENERAL PUBLIC LICENSE Version 2
+#
+
+
+#################################################################################
+#
+# If you want to change the defaults it is strongly recommended to 
+# use the config file under /etc/default/lenc-update
+#
+
+
+
 
 DEBUG=0
 
@@ -15,13 +32,8 @@ LENC_RENEWCMD="renew"
 # you might want to replace the certificate, but why??
 # LENC_RENEWCMD="certonly"
 
-RESTARTWEBSERVER=0
-
 # Minimum days of cert validity that must be left before trying to renew cert
 MIN_VALDAYS=14
-
-
-LENC_UPDATE_CONFFILE="/etc/default/lenc-update"
 
 
 ## Parameters to restart/reload the webserver
@@ -37,6 +49,18 @@ WEBSRV_CMD02=""
 # the hard way including an outage but making sure to reload
 WEBSRV_CMD01="stop"
 WEBSRV_CMD02="start"
+
+
+#################################################################################
+#
+# No user servicable parts below this point
+#
+
+
+RESTARTWEBSERVER=0
+
+LENC_UPDATE_CONFFILE="/etc/default/lenc-update"
+
 
 
 # you might want to overide the defaults in the default file (very debianish way....)
