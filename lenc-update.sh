@@ -47,9 +47,11 @@ WEBSRV_SERVICENAME="nginx"
 WEBSRV_CMD01="restart"
 WEBSRV_CMD02=""
 # the hard way including an outage but making sure to reload
-WEBSRV_CMD01="stop"
-WEBSRV_CMD02="start"
+#WEBSRV_CMD01="stop"
+#WEBSRV_CMD02="start"
 
+# Config file
+LENC_UPDATE_CONFFILE="/etc/letsencrypt/lenc-update.conf"
 
 #################################################################################
 #
@@ -59,11 +61,12 @@ WEBSRV_CMD02="start"
 
 RESTARTWEBSERVER=0
 
-LENC_UPDATE_CONFFILE="/etc/default/lenc-update"
 
+# you might want to overide the defaults in the default file (a very debianish way....)
+LENC_UPDATE_DEFCONFFILE="/etc/default/lenc-update"
+[ -r "$LENC_UPDATE_DEFCONFFILE" ] && source "$LENC_UPDATE_DEFCONFFILE"
 
-
-# you might want to overide the defaults in the default file (very debianish way....)
+# you might want to overide the defaults in a config file (the usual trade)
 [ -r "$LENC_UPDATE_CONFFILE" ] && source "$LENC_UPDATE_CONFFILE"
 
 
