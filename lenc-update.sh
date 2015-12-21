@@ -59,17 +59,39 @@ LENC_UPDATE_CONFFILE="/etc/letsencrypt/lenc-update.conf"
 #
 
 
-RESTARTWEBSERVER=0
+function setenv () {
 
 
-# you might want to overide the defaults in the default file (a very debianish way....)
-LENC_UPDATE_DEFCONFFILE="/etc/default/lenc-update"
-[ -r "$LENC_UPDATE_DEFCONFFILE" ] && source "$LENC_UPDATE_DEFCONFFILE"
-
-# you might want to overide the defaults in a config file (the usual trade)
-[ -r "$LENC_UPDATE_CONFFILE" ] && source "$LENC_UPDATE_CONFFILE"
+	RESTARTWEBSERVER=0
 
 
+	# you might want to overide the defaults in the default file (a very debianish way....)
+	LENC_UPDATE_DEFCONFFILE="/etc/default/lenc-update"
+	[ -r "$LENC_UPDATE_DEFCONFFILE" ] && source "$LENC_UPDATE_DEFCONFFILE"
+
+	# you might want to overide the defaults in a config file (the usual trade)
+	[ -r "$LENC_UPDATE_CONFFILE" ] && source "$LENC_UPDATE_CONFFILE"
+
+}
+
+
+
+function checkenv () {
+
+	# check if LENC_AUTOBINARY is set to a reasonable value
+	[ ! -x `which "$LENC_AUTOBINARY"` ] && { echo "ERROR: Variable LENC_AUTOBINARY has no reasonable value, >$LENC_AUTOBINARY< not found or not executable."; exit 1; }
+
+	# check if WEBSRV_SERVICENAME is set to a reasonable value
+	[ ! -x `which "$WEBSRV_SERVICENAME"` ] && { echo "ERROR: Variable WEBSRV_SERVICENAME has no reasonable value, >$WEBSRV_SERVICENAME< not found or not executable."; exit 2; }
+
+	
+	# check existance of LENC_CONFDIR directory
+	[ ! -d "$LENC_CONFDIR" ] && { echo "ERROR: Variable LENC_CONFDIR has no reasonable value, >$LENC_CONFDIR< not found or not an directory."; exit 3; }
+
+
+	# check existence of LENC_LIVEDIRNAME directory
+	[ ! -d "$LENC_LIVEDIRNAME" ] && { echo "ERROR: Variable LENC_LIVEDIRNAME has no reasonable value, >$LENC_LIVEDIRNAME< not found or not an directory."; exit 3; }
+}
 
 function updatecert () {
 
@@ -212,6 +234,8 @@ function careforwebserver () {
 }
 
 
+setenv
+checkenv
 runallconfigs
 careforwebserver
 
