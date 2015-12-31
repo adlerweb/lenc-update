@@ -28,9 +28,9 @@ LENC_DEFAULT_CERTFILENAME="cert.pem"
 
 LENC_CONFFILE_SFX=".ini"
 LENC_AUTOBINARY="/root/install/letsencrypt/bin/letsencrypt/letsencrypt-auto"
-LENC_RENEWCMD="renew"
-# you might want to replace the certificate, but why??
-# LENC_RENEWCMD="certonly"
+## letsencrypt command to run if certificate is about to expire
+## default is to renew and not use any integrated install method
+LENC_RENEWCMD="certonly"
 
 # Minimum days of cert validity that must be left before trying to renew cert
 MIN_VALDAYS=14
