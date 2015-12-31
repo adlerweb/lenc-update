@@ -8,7 +8,7 @@ Please note that this software is in alpha state and comes with no warranties at
 
 The script should implement the following features:
 
-1. works with nginx, but can easily altered to work with any other web server,
+1. works with nginx, but can easily altered to work with any other web server or service (e.g. haproxy,...),
 1. works with multiple certificates,
 1. treats each certificate individually,
 1. can be run daily without taking any action without cause,
@@ -43,7 +43,8 @@ The script should implement the following features:
  1. `MIN_VALDAYS`: Minimum number of days a certificate is valid until we start trying to renew the signature. Defaults to 14 days.
  1. `LENC_CONFDIR`: Basedir where the letsencrypt configuration lives. Default is "/etc/letsencrypt"
  1. `LENC_CONFFILE_SFX`: file suffix, indicating that this is a letsencrypt certificate definition. Defaults to ".ini"
- 1. `DEBUG`: Numeric value to increase verbosity, 0=suitable for unattended execution, 1= some more information but still OK for cron execution, prepare for receiving daily mailing from cron.
+ 1. `DEBUG`: Numeric value to increase verbosity, 0=suitable for unattended execution, 1= some more information but still OK for cron execution, prepare for receiving daily mailing from cron. Might also be set as a environment variable in the shell, but is superseded by any assignment in the config files. 
+ 1. `DRYRUN`: Numeric value, 0=serious mode, will renew certs and restart services (default), all values other than 0 will just print the commands on stdout (usually aka display). Might also be set as a environment variable in the shell, but is superseded by any assignment in the config files. 
  1. If you're not using nginx or are not happy with the default action "reload" you might want to review the ```WEBSRV_*``` variables.
 1. Make sure you do run the script on a regular basis, e.g. once a day from cron.
  1. To do so you might want to create a softlink:  `cd /etc/cron.daily/; ln -s /usr/local/sbin/lenc-update` 

@@ -11,13 +11,21 @@
 #################################################################################
 #
 # If you want to change the defaults it is strongly recommended to 
-# use the config file under /etc/default/lenc-update
+# use the configuration file under /etc/default/lenc-update
+#
+# You can set the following defaults also from the commandline:
+#  export DEBUG=x
+#  export DRYRUN=x
+# 
+# Please note that the values will be superseded if you assign different 
+# values in the configuration files. 
 #
 
 
 
+DEBUG=${DEBUG:-0}
+DRYRUN=${DEBUG:-0}
 
-DEBUG=0
 
 [ $DEBUG -ge 3 ] && set -xv
 
@@ -98,7 +106,15 @@ function updatecert () {
 
 	local DOMAINNAME="$1"
 	[ $DEBUG -ge 1 ] && echo "--> Updating cert for domain $DOMAINNAME"
-	$LENC_AUTOBINARY -c "$LENC_CONFDIR/$DOMAINNAME$LENC_CONFFILE_SFX" $LENC_RENEWCMD
+
+	if [ $DRYRUN -eq 0 ] ;
+	then
+		# be serious and go for it
+		$LENC_AUTOBINARY -c "$LENC_CONFDIR/$DOMAINNAME$LENC_CONFFILE_SFX" $LENC_RENEWCMD
+	else 
+		# just tell us what would happen
+		echo "DRYRUN: $LENC_AUTOBINARY -c \"$LENC_CONFDIR/$DOMAINNAME$LENC_CONFFILE_SFX\" $LENC_RENEWCMD"
+	fi
 
 }
 
@@ -212,11 +228,27 @@ function careforwebserver () {
 
 		# need to reload webserver config
 		[ $DEBUG -ge 2 ] && echo "DEBUG02: Restarting webserver: running >$SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD01<."
-		"$SERVICE_BIN"  "$WEBSRV_SERVICENAME" "$WEBSRV_CMD01"
-		RETVAL=$?
+		
+		if [ $DRYRUN -eq 0 ] ;
+		then
+			# being serious and really doing it
+			"$SERVICE_BIN"  "$WEBSRV_SERVICENAME" "$WEBSRV_CMD01"
+			RETVAL=$?
+		else 
+			# dry run and jsut showing off
+			echo "DRYRUN : $SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD01"
+			RETVAL=0
+		fi
 		
 		[ -n "$WEBSRV_CMD02" -a $DEBUG -ge 2 ] && echo "DEBUG02: Restarting webserver: running >$SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD02<."
-		[ -n "$WEBSRV_CMD02" ] && { "$SERVICE_BIN"  "$WEBSRV_SERVICENAME" "$WEBSRV_CMD02"; RETVAL=$?; }
+		if [ $DRYRUN -eq 0 ] ;
+		then
+			# being serious and really doing it
+			[ -n "$WEBSRV_CMD02" ] && { "$SERVICE_BIN"  "$WEBSRV_SERVICENAME" "$WEBSRV_CMD02"; RETVAL=$?; }
+		else
+			# dry run and jsut showing off
+			[ -n "$WEBSRV_CMD02" ] && { echo "DRYRUN: $SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD02"; RETVAL=0; }
+		fi
 		
 
 		if [ $RETVAL -ne 0 ] ; 
