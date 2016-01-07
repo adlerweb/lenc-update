@@ -11,7 +11,11 @@
 #################################################################################
 #
 # If you want to change the defaults it is strongly recommended to 
-# use the configuration file under /etc/default/lenc-update
+# use the configuration file under /etc/default/lenc-update or the optional 
+# default configuration /$LENC_CONFDIR/lenc-update.conf .
+#
+# If a configuration file is provided as the first parameter, this will be 
+# read instead of the defaults
 #
 # You can set the following defaults also from the commandline:
 #  export DEBUG=x
@@ -23,62 +27,88 @@
 
 
 
-DEBUG=${DEBUG:-0}
-DRYRUN=${DEBUG:-0}
-
-
-[ $DEBUG -ge 3 ] && set -xv
-
-
-LENC_CONFDIR="/etc/letsencrypt"
-LENC_LIVEDIRNAME="$LENC_CONFDIR/live"
-LENC_DEFAULT_CERTFILENAME="cert.pem"
-
-LENC_CONFFILE_SFX=".ini"
-LENC_AUTOBINARY="/root/install/letsencrypt/bin/letsencrypt/letsencrypt-auto"
-## letsencrypt command to run if certificate is about to expire
-## default is to renew and not use any integrated install method
-LENC_RENEWCMD="certonly"
-
-# Minimum days of cert validity that must be left before trying to renew cert
-MIN_VALDAYS=14
-
-
-## Parameters to restart/reload the webserver
-SERVICE_BIN="service"
-#WEBSRV_SERVICENAME="apache2"
-WEBSRV_SERVICENAME="nginx"
-## apache restart
-#WEBSRV_CMD01="gracefull-restart"
-#WEBSRV_CMD02=""
-## nginx, but I am not sure if this will be sufficient to reload the certificates
-WEBSRV_CMD01="restart"
-WEBSRV_CMD02=""
-# the hard way including an outage but making sure to reload
-#WEBSRV_CMD01="stop"
-#WEBSRV_CMD02="start"
-
-# Config file
-LENC_UPDATE_CONFFILE="/etc/letsencrypt/lenc-update.conf"
-
 #################################################################################
 #
-# No user servicable parts below this point
+# No user servicable parts beyond this point!
 #
+
+
+function usage () {
+
+			cat <<EOUSAGE
+
+usage:    lenc-update.sh [CONFIGFILE]
+
+EOUSAGE
+}
 
 
 function setenv () {
 
 
+	DEBUG=${DEBUG:-0}
+	DRYRUN=${DEBUG:-0}
+
+
+	[ $DEBUG -ge 3 ] && set -xv
+
+
+	LENC_CONFDIR="/etc/letsencrypt"
+	LENC_LIVEDIRNAME="$LENC_CONFDIR/live"
+	LENC_DEFAULT_CERTFILENAME="cert.pem"
+
+	LENC_CONFFILE_SFX=".ini"
+	LENC_AUTOBINARY="/root/install/letsencrypt/bin/letsencrypt/letsencrypt-auto"
+	## letsencrypt command to run if certificate is about to expire
+	## default is to renew and not use any integrated install method
+	LENC_RENEWCMD="certonly"
+
+	# Minimum days of cert validity that must be left before trying to renew cert
+	MIN_VALDAYS=14
+
+
+	## Parameters to restart/reload the webserver
+	SERVICE_BIN="service"
+	#WEBSRV_SERVICENAME="apache2"
+	WEBSRV_SERVICENAME="nginx"
+	## apache restart
+	#WEBSRV_CMD01="gracefull-restart"
+	#WEBSRV_CMD02=""
+	## nginx, but I am not sure if this will be sufficient to reload the certificates
+	WEBSRV_CMD01="restart"
+	WEBSRV_CMD02=""
+	# the hard way including an outage but making sure to reload
+	#WEBSRV_CMD01="stop"
+	#WEBSRV_CMD02="start"
+
+	# Config files
+	## debianish default
+	LENC_UPDATE_DEFCONFFILE="/etc/default/lenc-update"
+	## you might want one in the letsencrypt directory
+	LENC_UPDATE_CONFFILE="$LENC_CONFDIR/lenc-update.conf"
+
 	RESTARTWEBSERVER=0
 
 
-	# you might want to overide the defaults in the default file (a very debianish way....)
-	LENC_UPDATE_DEFCONFFILE="/etc/default/lenc-update"
-	[ -r "$LENC_UPDATE_DEFCONFFILE" ] && source "$LENC_UPDATE_DEFCONFFILE"
+	if [ -z "$1" ];
+	then
+		# try to read the default configuration files
 
-	# you might want to overide the defaults in a config file (the usual trade)
-	[ -r "$LENC_UPDATE_CONFFILE" ] && source "$LENC_UPDATE_CONFFILE"
+		# you might want to overide the defaults in the default file (a very debianish way....)
+		[ -r "$LENC_UPDATE_DEFCONFFILE" ] && source "$LENC_UPDATE_DEFCONFFILE"
+
+		# you might want to overide the defaults in a config file (the usual trade)
+		[ -r "$LENC_UPDATE_CONFFILE" ] && source "$LENC_UPDATE_CONFFILE"
+	else
+		if [ -r "$1" ] ;
+		then
+			# read the provided configuration file
+			source "$1"
+		else
+			usage
+			exit 1
+		fi		
+	fi
 
 }
 
@@ -266,7 +296,7 @@ function careforwebserver () {
 }
 
 
-setenv
+setenv "$1"
 checkenv
 runallconfigs
 careforwebserver
