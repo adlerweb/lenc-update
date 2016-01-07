@@ -96,7 +96,6 @@ renew-by-default
 Now obtaining and renewing the certificates can be done without user interaction by running something like:
  
 * ```./letsencrypt-auto -c /etc/letsencrypt/example.personalrocketscience.de.ini certonly```. 
-* ```./letsencrypt-auto -c /etc/letsencrypt/example.personalrocketscience.de.ini renew```. 
 
 Please note that letsencrypt-auto needs write access to the named instance's webroot when using the webroot authenticator.
   
