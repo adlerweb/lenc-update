@@ -32,6 +32,9 @@ The script should implement the following features:
  1. Make sure the ini-files do have a suffix of `.ini` (or you have to change the script configuration later on).
  1. [SAN certificates](https://en.wikipedia.org/wiki/SubjectAltName) are not supported presently by lenc-updater (even if supported by letsencrypt some day in the future).
 
+The following tools have to be installed:
+ * openssl
+ * mawk
 
 
 ## Quick Start
