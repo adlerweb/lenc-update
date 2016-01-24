@@ -47,39 +47,28 @@ function setenv () {
 
 
 	DEBUG=${DEBUG:-0}
-	DRYRUN=${DEBUG:-0}
+	DRYRUN=${DRYRUN:-0}
 
-
-	[ $DEBUG -ge 3 ] && set -xv
+	[ $DEBUG -ge 5 ] && set -xv
 
 
 	LENC_CONFDIR="/etc/letsencrypt"
+	LENC_RENEWDIR="$LENC_CONFDIR/renewal"
 	LENC_LIVEDIRNAME="$LENC_CONFDIR/live"
 	LENC_DEFAULT_CERTFILENAME="cert.pem"
 
-	LENC_CONFFILE_SFX=".ini"
-	LENC_AUTOBINARY="/root/install/letsencrypt/bin/letsencrypt/letsencrypt-auto"
+	LENC_CONFFILE_SFX=".conf"
+	LENC_BINARY="/usr/bin/letsencrypt"
 	## letsencrypt command to run if certificate is about to expire
 	## default is to renew and not use any integrated install method
 	LENC_RENEWCMD="certonly"
 
 	# Minimum days of cert validity that must be left before trying to renew cert
-	MIN_VALDAYS=14
+	MIN_VALDAYS=30
 
-
-	## Parameters to restart/reload the webserver
-	SERVICE_BIN="service"
-	#WEBSRV_SERVICENAME="apache2"
-	WEBSRV_SERVICENAME="nginx"
-	## apache restart
-	#WEBSRV_CMD01="gracefull-restart"
-	#WEBSRV_CMD02=""
-	## nginx, but I am not sure if this will be sufficient to reload the certificates
-	WEBSRV_CMD01="restart"
-	WEBSRV_CMD02=""
-	# the hard way including an outage but making sure to reload
-	#WEBSRV_CMD01="stop"
-	#WEBSRV_CMD02="start"
+	LENC_OPENSSL="/usr/bin/openssl"
+	LENC_AWK="/usr/bin/awk"
+	LENC_GREP="/bin/grep"
 
 	# Config files
 	## debianish default
@@ -87,8 +76,7 @@ function setenv () {
 	## you might want one in the letsencrypt directory
 	LENC_UPDATE_CONFFILE="$LENC_CONFDIR/lenc-update.conf"
 
-	RESTARTWEBSERVER=0
-
+	RESTARTS=()
 
 	if [ -z "$1" ];
 	then
@@ -110,17 +98,18 @@ function setenv () {
 		fi		
 	fi
 
+	[ $DEBUG -ge 5 ] && set -xv
+
+
+
 }
 
 
 
 function checkenv () {
 
-	# check if LENC_AUTOBINARY is set to a reasonable value
-	[ ! -x `which "$LENC_AUTOBINARY"` ] && { echo "ERROR: Variable LENC_AUTOBINARY has no reasonable value, >$LENC_AUTOBINARY< not found or not executable."; exit 1; }
-
-	# check if WEBSRV_SERVICENAME is set to a reasonable value
-	[ ! -x `which "$WEBSRV_SERVICENAME"` ] && { echo "ERROR: Variable WEBSRV_SERVICENAME has no reasonable value, >$WEBSRV_SERVICENAME< not found or not executable."; exit 2; }
+	# check if LENC_BINARY is set to a reasonable value
+	which "$LENC_BINARY" > /dev/null || { echo "ERROR: Variable LENC_BINARY has no reasonable value, >$LENC_BINARY< not found or not executable."; exit 1; }
 
 	
 	# check existance of LENC_CONFDIR directory
@@ -137,13 +126,21 @@ function updatecert () {
 	local DOMAINNAME="$1"
 	[ $DEBUG -ge 1 ] && echo "--> Updating cert for domain $DOMAINNAME"
 
+	#Get Domain List
+	DOMAINSTR=`$LENC_GREP "domains = " $INIFILE | $LENC_AWK -F "= " '{print $2}'`
+	IFS=', ' read -r -a DOMAINLIST <<< "$DOMAINSTR"
+
+	separator=" -d "
+	DOMAINCMD="$( printf "${separator}%s" "${DOMAINLIST[@]}" )"
+	DOMAINCMD="${DOMAINCMD:${#separator}}" # remove leading separator
+
 	if [ $DRYRUN -eq 0 ] ;
 	then
 		# be serious and go for it
-		$LENC_AUTOBINARY -c "$LENC_CONFDIR/$DOMAINNAME$LENC_CONFFILE_SFX" $LENC_RENEWCMD
+		$LENC_BINARY -d ${DOMAINCMD} $LENC_RENEWCMD
 	else 
 		# just tell us what would happen
-		echo "DRYRUN: $LENC_AUTOBINARY -c \"$LENC_CONFDIR/$DOMAINNAME$LENC_CONFFILE_SFX\" $LENC_RENEWCMD"
+		echo "DRYRUN: $LENC_BINARY -d $DOMAINCMD $LENC_RENEWCMD"
 	fi
 
 }
@@ -156,7 +153,7 @@ function getcertdaystoexpiry () {
 
 	local CERTFILE="$1"
 
-	local CERT_XPRY_STRING=`openssl x509 -in "$CERTFILE" -noout   -enddate | mawk -F "=" '{print $2}'`
+	local CERT_XPRY_STRING=`$LENC_OPENSSL x509 -in "$CERTFILE" -noout   -enddate | $LENC_AWK -F "=" '{print $2}'`
 	local CERT_XPRY_NUM=`date -d "$CERT_XPRY_STRING" +%s`
 	local DATE_NOW_NUM=`date  +%s`
 	[ $DEBUG -ge 2 ] && echo "DEBUG02: Now in seconds since 1970 is $DATE_NOW_NUM"
@@ -188,10 +185,17 @@ function checkcertneedsrenewal () {
 		updatecert "$DOMAINNAME"
 		if [ $? -eq 0 ] ; 
 		then
-			RESTARTWEBSERVER=1
+			[[ ! -z ${LENC_SRV_DEFAULT} ]] && RESTARTS=( "${RESTARTS[@]}" "${LENC_SRV_DEFAULT[@]}" )
+
+			if [ -f ${LENC_CONFDIR}/lenc-${DOMAINNAME}.conf ] ;
+			then
+				#Read file and add each line as command
+				while IFS='' read -r line || [[ -n "$line" ]]; do
+					RESTARTS+=("${line}")
+				done < "${LENC_CONFDIR}/lenc-${DOMAINNAME}.conf"
+			fi
 		else
 			[ $DEBUG -ge 2 ] && echo "DEBUG02: Update of cert did fail."
-			
 		fi 
 	else 
 		## not updating cert
@@ -211,7 +215,7 @@ function runonecert () {
 
 	[ $DEBUG -ge 1 ] && echo "DEBUG01: Inifile is $INIFILE"
 
-	local DOMAINNAME="`grep -E "^[[:space:]]*domain[[:space:]]*.*$" "$INIFILE" | mawk '{print $2}'`"
+	local DOMAINNAME="`basename $INIFILE $LENC_CONFFILE_SFX`"
 
 	[ $DEBUG -ge 1 ] && echo "DEBUG01: Domainname is $DOMAINNAME"
 	
@@ -241,7 +245,7 @@ function runallconfigs () {
 
 	# enumerate all letsencrypt files and start the check and update on them 
 
-	for INIFILE in `find "$LENC_CONFDIR" -maxdepth 1 -name "*$LENC_CONFFILE_SFX" ` ; 
+	for INIFILE in `find "$LENC_RENEWDIR" -maxdepth 1 -name "*$LENC_CONFFILE_SFX" ` ;
 	do 
 		runonecert "$INIFILE"
 	done
@@ -251,46 +255,27 @@ function runallconfigs () {
 
 
 
-function careforwebserver () {
+function processrestarts () {
 
-	if [ $RESTARTWEBSERVER -eq 1 ] ;
+	if [ ${#RESTARTS[@]} -gt 0 ];
 	then
-
-		# need to reload webserver config
-		[ $DEBUG -ge 2 ] && echo "DEBUG02: Restarting webserver: running >$SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD01<."
+		#Remove duplicates
+		readarray -t commands < <(printf '%s\n' "${RESTARTS[@]}" | sort -u)
 		
-		if [ $DRYRUN -eq 0 ] ;
-		then
-			# being serious and really doing it
-			"$SERVICE_BIN"  "$WEBSRV_SERVICENAME" "$WEBSRV_CMD01"
-			RETVAL=$?
-		else 
-			# dry run and jsut showing off
-			echo "DRYRUN : $SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD01"
-			RETVAL=0
-		fi
+		for cmd in "${commands[@]}" ;do
+			[ $DEBUG -ge 2 ] && echo "DEBUG02: Restarting service: running >$cmd<."
 		
-		[ -n "$WEBSRV_CMD02" -a $DEBUG -ge 2 ] && echo "DEBUG02: Restarting webserver: running >$SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD02<."
-		if [ $DRYRUN -eq 0 ] ;
-		then
-			# being serious and really doing it
-			[ -n "$WEBSRV_CMD02" ] && { "$SERVICE_BIN"  "$WEBSRV_SERVICENAME" "$WEBSRV_CMD02"; RETVAL=$?; }
-		else
-			# dry run and jsut showing off
-			[ -n "$WEBSRV_CMD02" ] && { echo "DRYRUN: $SERVICE_BIN  $WEBSRV_SERVICENAME $WEBSRV_CMD02"; RETVAL=0; }
-		fi
-		
-
-		if [ $RETVAL -ne 0 ] ; 
-		then
-			echo "ERROR: Webserver restart did fail with errorcode $RETVAL. Please check!"
-			exit $RETVAL
-		else 
-		[ $DEBUG -ge 1 ] && echo "DEBUG01: Webserver did restart successfully."
-			
-		fi
+			if [ $DRYRUN -eq 0 ] ;
+			then
+				# being serious and really doing it
+				$cmd
+			else
+				# dry run and jsut showing off
+				echo "DRYRUN : $cmd"
+			fi
+		done
 	else
-		[ $DEBUG -ge 2 ] && echo "DEBUG02: No restart of webserver needed."
+		[ $DEBUG -ge 2 ] && echo "DEBUG02: No restart of services needed."
 	fi
 
 }
@@ -299,6 +284,6 @@ function careforwebserver () {
 setenv "$1"
 checkenv
 runallconfigs
-careforwebserver
+processrestarts
 
 
